@@ -19,22 +19,25 @@
   </head>
   <body>
     <div id="root"></div>
-    <audio id="greetingAudio" src="/greeting.mp3" preload="auto"></audio>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     (function(){
       if(location.pathname.startsWith('/admin')) return;
-      var audio=document.getElementById('greetingAudio');
-      var played=sessionStorage.getItem('greeting_played');
-      if(!played&&audio){
-        var play=function(){
-          audio.play().then(function(){sessionStorage.setItem('greeting_played','1')}).catch(function(){});
-          document.removeEventListener('click',play);
-          document.removeEventListener('touchstart',play);
-        };
-        document.addEventListener('click',play);
-        document.addEventListener('touchstart',play);
+      var played=false;
+      function playGreeting(){
+        if(played) return;
+        played=true;
+        var a=new Audio('/greeting.mp3');
+        a.volume=1;
+        a.play().catch(function(){played=false;});
       }
+      try{playGreeting();}catch(e){}
+      ['click','touchstart','scroll','keydown'].forEach(function(evt){
+        document.addEventListener(evt,function h(){
+          playGreeting();
+          document.removeEventListener(evt,h);
+        },{once:true,passive:true});
+      });
       var key='pw_visitor_sid';
       var sid=sessionStorage.getItem(key);
       if(!sid){sid=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem(key,sid)}
